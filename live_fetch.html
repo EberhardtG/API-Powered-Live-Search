@@ -1,0 +1,129 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live User Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Live User Search</h1>
+
+    <!-- Loading message -->
+    <p id="status">Loading users...</p>
+
+    <!-- Container where user cards will go -->
+    <div id="user-container"></div>
+    <section>
+        <h2>Search Users by Name</h2>
+        <input type="text" id="search-input" placeholder="Type to search users...">
+    </section>
+    <section>
+        <h2>Search Users by Email</h2>
+        <input type="text" id="email-search-input" placeholder="Type to search users by email...">
+    </section>
+    <section>
+        <h2>Search Users by Company</h2>
+        <input type="text" id="company-search-input" placeholder="Type to search users by company...">
+    </section>
+    <p id="result-count"></p>
+    <script>
+        // -------------------------------------------------------------
+// WHY:
+// This script loads user data from an external API and provides
+// a real-time search interface. Users should see a loading state,
+// then a list of user cards, and be able to filter by name,
+// email, or company instantly as they type. The UI must update
+// without re-fetching data and clearly show result counts and
+// "No users found" when filters remove all matches.
+//
+// DESIGN:
+// - Select all needed DOM elements and store fetched users in
+//   a shared array (`allUsers`) so filtering is fast and local.
+// - `renderUsers()` rebuilds the card list by clearing the
+//   container and inserting new user cards.
+// - `applyFilters()` reads all search inputs, normalizes them,
+//   filters `allUsers` using case-insensitive matching, updates
+//   the result count, and shows a "No users found" message when
+//   appropriate.
+// - Input event listeners trigger `applyFilters()` on every
+//   keystroke for live search behavior.
+// - The fetch request runs last so all functions and listeners
+//   are ready; it updates the loading state, handles errors,
+//   stores the data, and renders the initial user list.
+//went with fetch() .then method instead of async/await to demonstrate a different approach to handling asynchronous operations. This choice also allows for chaining multiple .then() calls for clarity and separation of concerns.
+// -------------------------------------------------------------
+
+        const statusEl = document.getElementById("status");
+        const userContainer = document.getElementById("user-container");
+        const searchInput = document.getElementById("search-input");
+        const emailSearchInput = document.getElementById("email-search-input");
+        const companySearchInput = document.getElementById("company-search-input");
+        let allUsers = [];
+
+        function renderUsers(users) {
+            userContainer.innerHTML = "";
+            users.forEach(user => {
+                const userCard = document.createElement("div");
+                userCard.style.border = "1px solid #ccc";
+                userCard.style.padding = "16px";
+                userCard.style.marginBottom = "12px";
+                userCard.innerHTML = `
+                    <h3>${user.name}</h3>
+                    <p><strong>Email:</strong> ${user.email}</p>
+                    <p><strong>Company:</strong> ${user.company.name}</p>
+                `;
+                userContainer.appendChild(userCard);
+            });
+        }
+
+        function applyFilters() {
+            const nameQuery = searchInput.value.trim().toLowerCase();
+            const emailQuery = emailSearchInput.value.trim().toLowerCase();
+            const companyQuery = companySearchInput.value.trim().toLowerCase();
+
+            const filteredUsers = allUsers.filter(user => {
+                const matchesName = user.name.toLowerCase().includes(nameQuery);
+                const matchesEmail = user.email.toLowerCase().includes(emailQuery);
+                const matchesCompany = user.company.name.toLowerCase().includes(companyQuery);
+                return matchesName && matchesEmail && matchesCompany;
+            });
+            if (filteredUsers.length === 0) {
+                userContainer.innerHTML = "<p>No users found matching your criteria.</p>";
+            }  
+            else {
+                renderUsers(filteredUsers);
+            }
+            const resultCountEl = document.getElementById("result-count");
+            resultCountEl.textContent = `Showing ${filteredUsers.length} of ${allUsers.length} users`;
+  
+        }
+
+        searchInput.addEventListener("input", applyFilters);
+        emailSearchInput.addEventListener("input", applyFilters);
+        companySearchInput.addEventListener("input", applyFilters);
+
+        fetch("https://jsonplaceholder.typicode.com/users")
+            .then(response => response.json())
+            .then(users => {
+                allUsers = users;
+                statusEl.textContent = "Users loaded!";
+                renderUsers(allUsers);
+            })
+            .catch(error => {
+                statusEl.textContent = "Error loading users.";
+                console.error(error);
+            });
+    </script>
+
+</body>
+</html>
